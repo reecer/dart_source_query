@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'responses/token_response.dart';
+import 'package:source_query/source_query.dart';
+
 import 'responses/valve_response.dart';
 import 'udp.dart';
 
@@ -14,55 +15,24 @@ enum MsgType {
 }
 
 class SourceQuery {
-  final String ip;
   final int port;
   final _socket = UDP(1338);
-  InternetAddress address;
-  Uint8List _token = DEFAULT_TOKEN;
 
-  SourceQuery(this.ip, this.port) {
-    address = InternetAddress(ip);
-  }
+  SourceQuery(this.port);
 
   Future<void> connect() {
     return _socket.startSocket();
   }
 
-  Future<ValveResponse> getInfo() => _send(MsgType.Info);
-  Future<ValveResponse> getRules() => _send(MsgType.Rules);
-  Future<ValveResponse> getPlayers() => _send(MsgType.Players);
+  Future<InfoResponse> getInfo(String ip, int port) => _send<InfoResponse>(MsgType.Info, ip, port);
+  Future<RulesResponse> getRules(String ip, int port) => _send<RulesResponse>(MsgType.Rules, ip, port);
+  Future<PlayerResponse> getPlayers(String ip, int port) => _send<PlayerResponse>(MsgType.Players, ip, port);
 
-  Future<ValveResponse> _send(MsgType msg, {retry=0}) async {
+  Future<T> _send<T extends ValveResponse>(MsgType msg, String ip, int port) async {
     print('Sending: ${msg}');
 
-    var payload = _buildMsg(msg);
-    var resp = await _socket.send(Datagram(payload, address, port));
-
-    if (resp is TokenResponse) {
-      if (MAX_TOKEN_RETRY > 5) {
-        throw 'Max token retry hit: ${MAX_TOKEN_RETRY}';
-      }
-      _token = resp.token;
-      return _send(msg, retry: retry++);
-    } else {
-      return resp;
-    }
-  }
-
-  Uint8List _buildMsg(MsgType msgType) {
-    var msg = [];
-    switch (msgType) {
-      case MsgType.Info:
-        msg = [0x54, ...'Source Engine Query'.codeUnits, 0];
-        break;
-      case MsgType.Players:
-        msg = [0x55, ..._token];
-        break;
-      case MsgType.Rules:
-        msg = [0x56, ..._token];
-        break;
-    }
-
-    return Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, ...msg]);
+    var addr = InternetAddress(ip);
+    var conn = _socket.getConn(addr, port);
+    return conn.send(msg);
   }
 }

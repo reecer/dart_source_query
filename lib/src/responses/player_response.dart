@@ -20,8 +20,6 @@ class PlayerResponse extends ValveResponse {
   final players = <Player>[];
 
   PlayerResponse.fromBlob(ByteData  blob) : super(blob) {
-    // TODO: ignore count and get all names
-    // var count = byte();
     while(pos < blob.lengthInBytes) {
       players.add(player());
     }
