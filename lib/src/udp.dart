@@ -41,6 +41,8 @@ class ServerConn {
   }
 
   void _send(MsgType msg) {
+    print('Sending: ${msg}');
+
     var payload = _buildMsg(msg);
     msgs.enqueue(msg);
     udp.send(Datagram(payload, address, port));
@@ -135,11 +137,20 @@ class UDP {
       _socket = socket;
       _socket.listen(_handleUDP);
     });
+
   }
 
-  void send(Datagram message) {
+  void stopSocket() {
+    _socket.close();
+  }
+
+  void send(Datagram message, {retry = 0}) {
     var result = _socket.send(message.data, message.address, message.port);
-    if (result == 0) {
+    if (result < 1) {
+      if (retry < 5) {
+        send(message, retry: retry++);
+        return;
+      }
       throw "socket didn't send";
     }
   }

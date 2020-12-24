@@ -6,14 +6,14 @@ import 'package:source_query/source_query.dart';
 var ip = '162.248.88.169', port = 28015;
 
 void main() async {
-  var sq = SourceQuery(8742);
+  var sq = SourceQuery(1337);
   await sq.connect();
 
   var info = await sq.getInfo(ip, port);
   print('Info: ${info.keywords}');
 
   var rules = await sq.getRules(ip, port);
-  print('Rules: ${rules}');
+  print('Rules: ${rules.rules.length}');
 
   var players = await sq.getPlayers(ip, port);
   print('Players: ${players.length}');

@@ -16,12 +16,18 @@ enum MsgType {
 
 class SourceQuery {
   final int port;
-  final _socket = UDP(1338);
+  UDP _udp;
 
-  SourceQuery(this.port);
+  SourceQuery(this.port) {
+    _udp = UDP(port);
+  }
 
   Future<void> connect() {
-    return _socket.startSocket();
+    return _udp.startSocket();
+  }
+
+  void disconnect() {
+    _udp.stopSocket();
   }
 
   Future<InfoResponse> getInfo(String ip, int port) => _send<InfoResponse>(MsgType.Info, ip, port);
@@ -29,10 +35,7 @@ class SourceQuery {
   Future<PlayerResponse> getPlayers(String ip, int port) => _send<PlayerResponse>(MsgType.Players, ip, port);
 
   Future<T> _send<T extends ValveResponse>(MsgType msg, String ip, int port) async {
-    print('Sending: ${msg}');
-
-    var addr = InternetAddress(ip);
-    var conn = _socket.getConn(addr, port);
+    var conn = _udp.getConn(InternetAddress(ip), port);
     return conn.send(msg);
   }
 }
